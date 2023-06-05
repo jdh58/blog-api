@@ -22,7 +22,7 @@ route.get('/:userId/posts/:postId', controller.getOnePost);
 route.post('/:userId/posts', controller.createPost);
 
 // Delete a post
-route.delete('/:userId/posts/:postId', controller.deleteComment);
+route.delete('/:userId/posts/:postId', controller.deletePost);
 
 // Get post's comments
 route.get('/:userId/posts/:postId/comments', controller.getComments);
