@@ -103,26 +103,43 @@ exports.createPost = [
     .withMessage('Your blog content must be between 10 and 100,000 characters.')
     .escape(),
 
-  asyncHandler(async (req, res) => {
-    // First verify token and shit
+  function authenticateUser(req, res) {
+    passport.authenticate(
+      'jwt',
+      { session: false },
+      async (err, user, info) => {
+        if (err) {
+          res.status(400).send(info);
+        } else {
+          if (!user) {
+            res.status(403).send(info);
+            return;
+          }
 
-    const post = new Post({
-      title: req.body.title,
-      text: req.body.text,
-      // user: authenticatedUser.userId
-      timestamp: new Date(),
-      published: published === 'ok' ? true : false,
-    });
+          const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
-      // There are errors with validation. Return 400 and the messages.
-      res.status(400);
-      res.send(errors.errors);
-      return;
-    } else {
-      // No errors and verified, move on
-    }
-  }),
+          const post = new Post({
+            title: req.body.title,
+            text: req.body.text,
+            user: user.id,
+            timestamp: new Date(),
+            published: req.body.published === 'ok' ? true : false,
+          });
+
+          if (!errors.isEmpty()) {
+            // There are errors with validation. Return 400 and the messages.
+            res.status(400);
+            res.send(errors.errors);
+            return;
+          } else if (req.params.userId === user.id) {
+            // No errors and verified, move on and create the post
+            await post.save();
+            res.status(200).send('Post successfully created');
+          }
+        }
+      }
+    )(req, res);
+  },
 ];
 
 exports.deletePost = asyncHandler(async (req, res) => {
@@ -148,8 +165,7 @@ exports.createComment = asyncHandler(async (req, res) => {});
 
 exports.deleteComment = asyncHandler(async (req, res) => {});
 
-exports.logIn = asyncHandler(async (req, res, next) => {
-  // Third argument is the "done" callback that gets called in passport.js
+exports.logIn = async (req, res) => {
   await passport.authenticate(
     'local',
     { session: false },
@@ -157,9 +173,11 @@ exports.logIn = asyncHandler(async (req, res, next) => {
       if (err || !user) {
         res.status(400).send(info);
       } else {
-        const token = jwt.sign({ user: user._id }, 'jdhblog');
-        res.json({ userId, token });
+        const token = jwt.sign({ userId: user.id }, 'jdhblog', {
+          expiresIn: '7d',
+        });
+        res.json({ user, token });
       }
     }
-  );
-});
+  )(req, res);
+};

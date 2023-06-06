@@ -16,17 +16,17 @@ const localStrat = new passportLocal.Strategy(async function verify(
   done
 ) {
   try {
-    const user = await User.find({ username: username }).exec();
+    const user = await User.findOne({ username: username }).exec();
 
     if (!user) {
       return done(null, false, { message: 'Username does not exist' });
     }
 
     bcrypt.compare(password, user.password, (err, res) => {
-      if (err) {
-        return done(null, false, { message: 'Incorrect password' });
-      } else {
+      if (res) {
         return done(null, user, { message: 'Successful sign in' });
+      } else {
+        return done(null, false, { message: 'Incorrect password' });
       }
     });
   } catch (err) {
@@ -47,6 +47,17 @@ const jwtStrat = new passportJWT.Strategy(
   async function (jwtPayload, done) {
     const user = await User.findById(jwtPayload.userId).exec();
 
-    return done(null, user, { mesaage: 'Successful authentication' });
+    if (!user) {
+      return done(null, null, {
+        message: 'Token validation failed. Please log in again',
+      });
+    }
+
+    return done(null, user, { message: 'Successful authentication' });
   }
 );
+
+module.exports = {
+  localStrat,
+  jwtStrat,
+};
