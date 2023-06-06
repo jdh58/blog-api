@@ -42,4 +42,7 @@ route.delete(
   controller.deleteComment
 );
 
+// Log in the user
+route.post('/login', controller.logIn);
+
 module.exports = route;

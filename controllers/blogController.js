@@ -3,7 +3,9 @@ const Post = require('../models/Post');
 const Comment = require('../models/Comment');
 
 const { body, validationResult } = require('express-validator');
+const passport = require('passport');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const asyncHandler = require('express-async-handler');
 
@@ -89,9 +91,46 @@ exports.getOnePost = asyncHandler(async (req, res) => {
   res.json({ post });
 });
 
-exports.createPost = asyncHandler(async (req, res) => {});
+exports.createPost = [
+  body('title')
+    .trim()
+    .isLength({ min: 5, max: 75 })
+    .withMessage('Your title must be between 5 and 75 characters.')
+    .escape(),
+  body('text')
+    .trim()
+    .isLength({ min: 10, max: 100000 })
+    .withMessage('Your blog content must be between 10 and 100,000 characters.')
+    .escape(),
 
-exports.deletePost = asyncHandler(async (req, res) => {});
+  asyncHandler(async (req, res) => {
+    // First verify token and shit
+
+    const post = new Post({
+      title: req.body.title,
+      text: req.body.text,
+      // user: authenticatedUser.userId
+      timestamp: new Date(),
+      published: published === 'ok' ? true : false,
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors with validation. Return 400 and the messages.
+      res.status(400);
+      res.send(errors.errors);
+      return;
+    } else {
+      // No errors and verified, move on
+    }
+  }),
+];
+
+exports.deletePost = asyncHandler(async (req, res) => {
+  // Verify the user is authenticated and it's the user's post
+  await Post.findByIdAndRemove(req.params.postId);
+  res.status(200);
+  res.send(`Post ${req.params.postId} has been deleted.`);
+});
 
 exports.getComments = asyncHandler(async (req, res) => {
   const comments = await Comment.find({ post: req.params.postId });
@@ -108,3 +147,19 @@ exports.getOneComment = asyncHandler(async (req, res) => {
 exports.createComment = asyncHandler(async (req, res) => {});
 
 exports.deleteComment = asyncHandler(async (req, res) => {});
+
+exports.logIn = asyncHandler(async (req, res, next) => {
+  // Third argument is the "done" callback that gets called in passport.js
+  await passport.authenticate(
+    'local',
+    { session: false },
+    (err, user, info) => {
+      if (err || !user) {
+        res.status(400).send(info);
+      } else {
+        const token = jwt.sign({ user }, 'jdhblog');
+        res.json({ user, token });
+      }
+    }
+  );
+});
