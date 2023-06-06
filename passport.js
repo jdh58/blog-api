@@ -39,3 +39,14 @@ const localStrat = new passportLocal.Strategy(async function verify(
 // Call it in app.js as app.use(passport.('jwt', jwtStrat))
 // Before any restricted route have the token authenticate the user
 // Then check if the user has permission
+const jwtStrat = new passportJWT.Strategy(
+  {
+    jwtFromRequest: passportJWT.ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: 'jdhblog',
+  },
+  async function (jwtPayload, done) {
+    const user = await User.findById(jwtPayload.userId).exec();
+
+    return done(null, user, { mesaage: 'Successful authentication' });
+  }
+);

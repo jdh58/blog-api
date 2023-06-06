@@ -157,8 +157,8 @@ exports.logIn = asyncHandler(async (req, res, next) => {
       if (err || !user) {
         res.status(400).send(info);
       } else {
-        const token = jwt.sign({ user }, 'jdhblog');
-        res.json({ user, token });
+        const token = jwt.sign({ user: user._id }, 'jdhblog');
+        res.json({ userId, token });
       }
     }
   );
