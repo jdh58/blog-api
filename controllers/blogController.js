@@ -7,6 +7,7 @@ const asyncHandler = require('express-async-handler');
 exports.getUsers = asyncHandler(async (req, res) => {
   const users = await User.find().exec();
 
+  console.log('dasdasd');
   res.json({ users });
 });
 
@@ -16,7 +17,10 @@ exports.getOneUser = asyncHandler(async (req, res) => {
   res.json({ user });
 });
 
-exports.createUser = asyncHandler(async (req, res) => {});
+exports.createUser = asyncHandler(async (req, res) => {
+  console.log(req.body);
+  res.send(req.body);
+});
 
 exports.getPosts = asyncHandler(async (req, res) => {
   const posts = await Post.find({ user: req.params.userId }).exec();

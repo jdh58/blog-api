@@ -41,3 +41,5 @@ route.delete(
   '/:userId/posts/:postId/comments/:commentId',
   controller.deleteComment
 );
+
+module.exports = route;
