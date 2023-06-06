@@ -38,7 +38,7 @@ const localStrat = new passportLocal.Strategy(async function verify(
 // If you sign it with the id you'll grab the user from the DB or store the user as a json object
 // Call it in app.js as app.use(passport.('jwt', jwtStrat))
 // Before any restricted route have the token authenticate the user
-// Then check if the user has permission
+// Then check if the user has permission in the controller
 const jwtStrat = new passportJWT.Strategy(
   {
     jwtFromRequest: passportJWT.ExtractJwt.fromAuthHeaderAsBearerToken(),

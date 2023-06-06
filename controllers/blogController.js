@@ -144,9 +144,25 @@ exports.createPost = [
 
 exports.deletePost = asyncHandler(async (req, res) => {
   // Verify the user is authenticated and it's the user's post
-  await Post.findByIdAndRemove(req.params.postId);
-  res.status(200);
-  res.send(`Post ${req.params.postId} has been deleted.`);
+  passport.authenticate('jwt', { session: false }, async (err, user, info) => {
+    if (err || !user) {
+      res.status(400).send(info);
+      return;
+    } else {
+      const postToDelete = await Post.findById(req.params.postId).exec();
+
+      if (user.id === postToDelete.user || user.admin === true) {
+        // The user is premitted to delete the post.
+        await Post.findByIdAndRemove(req.params.postId);
+        res.status(200).send(`Post ${req.params.postId} has been deleted.`);
+        return;
+      }
+
+      // The user was not allowed to delete this post
+      res.status(403).send('Forbidden');
+      return;
+    }
+  })(req, res);
 });
 
 exports.getComments = asyncHandler(async (req, res) => {
@@ -161,9 +177,63 @@ exports.getOneComment = asyncHandler(async (req, res) => {
   res.json({ comment });
 });
 
-exports.createComment = asyncHandler(async (req, res) => {});
+exports.createComment = [
+  body('text').trim().isLength({ min: 1, max: 1000 }),
+  function authenticationWrapper(req, res) {
+    passport.authenticate(
+      'jwt',
+      { session: false },
+      async (err, user, info) => {
+        if (err) {
+          res.status(400).send(info);
+          return;
+        }
+        if (!user) {
+          // User is not logged in
+          res.status(403).send('Authentication failed. Forbidden.');
+          return;
+        }
 
-exports.deleteComment = asyncHandler(async (req, res) => {});
+        // User is authenticated, allow them to post the comment
+        const comment = new Comment({
+          text: req.body.text,
+          post: req.params.postId,
+          user: user.userId,
+          timestamp: new Date(),
+        });
+
+        await comment.save();
+        res.status(200).send('Comment successfully posted');
+      }
+    )(req, res);
+  },
+];
+
+exports.deleteComment = function authenticationWrapper(req, res) {
+  passport.authenticate('jwt', { session: false }, async (err, user, info) => {
+    if (err) {
+      res.status(400).send(info);
+      return;
+    }
+    if (!user) {
+      // Not logged in
+      res.status(403).send('Authentication failed. Forbidden.');
+    }
+
+    const commentToDelete = await Comment.findById(req.params.commentId).exec();
+
+    if (user.id === commentToDelete.user || user.admin === true) {
+      // User is permitted to delete comment
+      await Comment.findByIdAndRemove(req.params.commentId);
+      res
+        .status(200)
+        .send(`Comment ${req.params.commentId} successfully deleted.`);
+    }
+
+    // User was not permitted to delete comment
+    res.status(403).send('Forbidden');
+  })(req, res);
+};
 
 exports.logIn = async (req, res) => {
   await passport.authenticate(
