@@ -151,7 +151,7 @@ exports.deletePost = asyncHandler(async (req, res) => {
     } else {
       const postToDelete = await Post.findById(req.params.postId).exec();
 
-      if (user.id === postToDelete.user || user.admin === true) {
+      if (user.id === postToDelete.user.toString() || user.admin === true) {
         // The user is premitted to delete the post.
         await Post.findByIdAndRemove(req.params.postId);
         res.status(200).send(`Post ${req.params.postId} has been deleted.`);
@@ -198,7 +198,7 @@ exports.createComment = [
         const comment = new Comment({
           text: req.body.text,
           post: req.params.postId,
-          user: user.userId,
+          user: user.id,
           timestamp: new Date(),
         });
 
@@ -222,7 +222,7 @@ exports.deleteComment = function authenticationWrapper(req, res) {
 
     const commentToDelete = await Comment.findById(req.params.commentId).exec();
 
-    if (user.id === commentToDelete.user || user.admin === true) {
+    if (user.id === commentToDelete.user.toString() || user.admin === true) {
       // User is permitted to delete comment
       await Comment.findByIdAndRemove(req.params.commentId);
       res
